@@ -28,6 +28,10 @@ var (
 // In case of success the provided slice will be reinitialized and its content
 // fully replaced with decoded data.
 func Unmarshal(data []byte, v any) error {
+	return CustomizeUnmarshal(data, v, ',', nil)
+}
+
+func CustomizeUnmarshal(data []byte, v any, separator rune, headers []string) error {
 	val := reflect.ValueOf(v)
 
 	if val.Kind() != reflect.Ptr || val.IsNil() {
@@ -46,7 +50,9 @@ func Unmarshal(data []byte, v any) error {
 		return &InvalidUnmarshalError{Type: val.Type()}
 	}
 
-	dec, err := NewDecoder(newCSVReader(bytes.NewReader(data)))
+	csvReader := newCSVReader(bytes.NewReader(data))
+	csvReader.Comma = separator
+	dec, err := NewDecoder(csvReader, headers...)
 	if err == io.EOF {
 		return nil
 	} else if err != nil {
